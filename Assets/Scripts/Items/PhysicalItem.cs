@@ -37,16 +37,15 @@ namespace KaijuGame.Items
 
         public virtual void Grab(Transform hand, Rigidbody handBody = null)
         {
-            if (hand == null) return;
+            if (hand == null || handBody == null) return;
             Release();
-            transform.SetParent(hand, true);
-            body.isKinematic = handBody != null;
-            if (handBody != null)
-            {
-                activeJoint = gameObject.AddComponent<FixedJoint>();
-                activeJoint.connectedBody = handBody;
-                activeJoint.enableCollision = true;
-            }
+            transform.SetParent(null, true);
+            body.isKinematic = false;
+            activeJoint = gameObject.AddComponent<FixedJoint>();
+            activeJoint.connectedBody = handBody;
+            activeJoint.enableCollision = true;
+            activeJoint.breakForce = Mathf.Infinity;
+            activeJoint.breakTorque = Mathf.Infinity;
         }
 
         public virtual void Release()
@@ -57,7 +56,8 @@ namespace KaijuGame.Items
                 activeJoint = null;
             }
 
-            transform.SetParent(originalParent, true);
+            if (originalParent != null)
+                transform.SetParent(originalParent, true);
             body.isKinematic = false;
         }
 

@@ -1,10 +1,11 @@
 using UnityEngine;
 using UnityEngine.AI;
 using KaijuGame.Player;
-using KaijuGame.Core;
+using KaijuGame.Voice;
 
 namespace KaijuGame.Modes
 {
+    [RequireComponent(typeof(VoiceHearingAI))]
     public sealed class ExtractionHunterAI : MonoBehaviour
     {
         [SerializeField] private float moveSpeed = 14f;
@@ -19,10 +20,12 @@ namespace KaijuGame.Modes
         private float attackTimer;
         private Transform target;
         private NavMeshAgent agent;
+        private VoiceHearingAI hearing;
 
         private void Awake()
         {
             agent = GetComponent<NavMeshAgent>();
+            hearing = GetComponent<VoiceHearingAI>();
             if (agent != null)
             {
                 agent.speed = moveSpeed;
@@ -35,7 +38,9 @@ namespace KaijuGame.Modes
         private void Update()
         {
             attackTimer -= Time.deltaTime;
-            target = FindClosestPlayer();
+            target = hearing != null && hearing.HeardTarget != null
+                ? hearing.HeardTarget
+                : FindClosestPlayer();
             if (target == null) return;
 
             var offset = target.position - transform.position;
@@ -56,8 +61,7 @@ namespace KaijuGame.Modes
             if (distance <= attackRange && attackTimer <= 0f)
             {
                 attackTimer = attackCooldown;
-                var vitals = target.GetComponentInParent<PlayerVitals>();
-                vitals?.TakeDamage(damage);
+                target.GetComponentInParent<PlayerVitals>()?.TakeDamage(damage);
             }
         }
 

@@ -10,6 +10,7 @@ namespace KaijuGame.Player
         [SerializeField] private float staminaRegen = 18f;
 
         public float Health { get; private set; }
+        public float MaxHealth => maxHealth;
         public float Stamina { get; private set; }
         public bool IsDowned { get; private set; }
         public event Action<float> HealthChanged;
@@ -35,10 +36,19 @@ namespace KaijuGame.Player
             if (Health <= 0f) SetDowned(true);
         }
 
+        public void TakeDamage(float amount) => Damage(amount);
+
         public void Heal(float amount)
         {
             if (IsDowned || amount <= 0f) return;
             Health = Mathf.Min(maxHealth, Health + amount);
+            HealthChanged?.Invoke(Health);
+        }
+
+        public void SetTemporaryMaxHealthBonus(float bonus, bool refill = true)
+        {
+            maxHealth = Mathf.Max(1f, maxHealth + bonus);
+            Health = refill ? maxHealth : Mathf.Min(Health, maxHealth);
             HealthChanged?.Invoke(Health);
         }
 

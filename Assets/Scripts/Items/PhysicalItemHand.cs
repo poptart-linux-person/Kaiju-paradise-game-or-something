@@ -1,4 +1,5 @@
 using UnityEngine;
+using KaijuGame.Networking;
 
 namespace KaijuGame.Items
 {
@@ -40,6 +41,7 @@ namespace KaijuGame.Items
             }
 
             if (nearest == null) return false;
+            nearest.GetComponent<PhotonPhysicalItem>()?.RequestOwnership();
             heldItem = nearest;
             heldItem.Grab(transform, body);
             return true;

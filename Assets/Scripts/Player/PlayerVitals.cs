@@ -9,6 +9,8 @@ namespace KaijuGame.Player
         [SerializeField] private float maxStamina = 100f;
         [SerializeField] private float staminaRegen = 18f;
 
+        private float baseMaxHealth;
+
         public float Health { get; private set; }
         public float MaxHealth => maxHealth;
         public float Stamina { get; private set; }
@@ -18,6 +20,7 @@ namespace KaijuGame.Player
 
         private void Awake()
         {
+            baseMaxHealth = maxHealth;
             Health = maxHealth;
             Stamina = maxStamina;
         }
@@ -47,8 +50,15 @@ namespace KaijuGame.Player
 
         public void SetTemporaryMaxHealthBonus(float bonus, bool refill = true)
         {
-            maxHealth = Mathf.Max(1f, maxHealth + bonus);
+            maxHealth = Mathf.Max(1f, baseMaxHealth + bonus);
             Health = refill ? maxHealth : Mathf.Min(Health, maxHealth);
+            HealthChanged?.Invoke(Health);
+        }
+
+        public void ClearTemporaryMaxHealthBonus(bool restoreBaseHealth = true)
+        {
+            maxHealth = baseMaxHealth;
+            Health = restoreBaseHealth ? maxHealth : Mathf.Min(Health, maxHealth);
             HealthChanged?.Invoke(Health);
         }
 

@@ -1,9 +1,5 @@
 using UnityEngine;
 
-#if PHOTON_UNITY_NETWORKING
-using Photon.Pun;
-#endif
-
 namespace KaijuGame.Items
 {
     public enum PhysicalItemType
@@ -68,7 +64,7 @@ namespace KaijuGame.Items
         public virtual void Throw(Vector3 velocity, Vector3 angularVelocity)
         {
             Release();
-            body.linearVelocity = velocity;
+            body.velocity = velocity;
             body.angularVelocity = angularVelocity;
         }
 

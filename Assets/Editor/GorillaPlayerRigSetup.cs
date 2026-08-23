@@ -57,6 +57,13 @@ namespace KaijuGame.EditorTools
             SetSerializedField(binder, "headCollider", headCollider);
             SetSerializedField(binder, "bodyCollider", bodyCollider);
 
+            AddGameplayComponent<KaijuGame.Player.PlayerVitals>(root);
+            AddGameplayComponent<KaijuGame.Player.ModePlayerModifiers>(root);
+            AddGameplayComponent<KaijuGame.World.KeycardInventory>(root);
+
+            ConfigurePhysicalHand(leftTracking, "LeftPhysicalHand", UnityEngine.XR.XRNode.LeftHand);
+            ConfigurePhysicalHand(rightTracking, "RightPhysicalHand", UnityEngine.XR.XRNode.RightHand);
+
             var gorillaType = Type.GetType("GorillaLocomotion.Player, Assembly-CSharp");
             if (gorillaType != null)
             {
@@ -74,7 +81,31 @@ namespace KaijuGame.EditorTools
 
             Selection.activeGameObject = root;
             EditorUtility.SetDirty(root);
-            Debug.Log($"Configured {root.name} as a Gorilla-style VR player rig.");
+            Debug.Log($"Configured {root.name} as a Gorilla-style VR player with physical hands and gameplay inventory.");
+        }
+
+        private static void ConfigurePhysicalHand(Transform tracking, string name, UnityEngine.XR.XRNode node)
+        {
+            var hand = GetOrCreate(tracking, name, tracking);
+            var body = hand.GetComponent<Rigidbody>() ?? Undo.AddComponent<Rigidbody>(hand.gameObject);
+            body.isKinematic = true;
+            body.useGravity = false;
+            body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+
+            var collider = hand.GetComponent<SphereCollider>() ?? Undo.AddComponent<SphereCollider>(hand.gameObject);
+            collider.radius = 0.08f;
+            collider.isTrigger = false;
+
+            AddGameplayComponent<KaijuGame.Items.PhysicalItemHand>(hand.gameObject);
+            var input = AddGameplayComponent<KaijuGame.Items.PhysicalItemHandInput>(hand.gameObject);
+            SetSerializedField(input, "hand", hand.GetComponent<KaijuGame.Items.PhysicalItemHand>());
+            SetSerializedField(input, "node", node);
+        }
+
+        private static T AddGameplayComponent<T>(GameObject root) where T : Component
+        {
+            var existing = root.GetComponent<T>();
+            return existing != null ? existing : Undo.AddComponent<T>(root);
         }
 
         private static Transform GetOrCreate(Transform parent, string name, Transform root)
@@ -112,6 +143,8 @@ namespace KaijuGame.EditorTools
                 field.SetValue(target, f);
             else if (field != null && field.FieldType == typeof(LayerMask) && value is LayerMask mask)
                 field.SetValue(target, mask);
+            else if (field != null && field.FieldType == typeof(UnityEngine.XR.XRNode) && value is UnityEngine.XR.XRNode node)
+                field.SetValue(target, node);
         }
 
         private static void SetSerializedField(UnityEngine.Object target, string name, object value)
@@ -121,6 +154,8 @@ namespace KaijuGame.EditorTools
             if (property == null) return;
             if (value is UnityEngine.Object obj)
                 property.objectReferenceValue = obj;
+            else if (value is UnityEngine.XR.XRNode node && property.propertyType == SerializedPropertyType.Enum)
+                property.enumValueIndex = (int)node;
             serialized.ApplyModifiedPropertiesWithoutUndo();
         }
     }

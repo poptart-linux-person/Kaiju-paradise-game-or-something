@@ -18,26 +18,63 @@ namespace KaijuGame.Modes
     public sealed class ExtractionMode : GameMode
     {
         public override GameModeId Id => GameModeId.Extraction;
-        [SerializeField] private int objectivesRequired = 3;
-        [SerializeField] private float extractionHoldSeconds = 12f;
-        private int completedObjectives;
-        private float extractionTimer;
 
-        public bool CanExtract => completedObjectives >= objectivesRequired;
-        public float ExtractionProgress => extractionHoldSeconds <= 0f ? 1f : Mathf.Clamp01(extractionTimer / extractionHoldSeconds);
+        [Header("Catacombs Escape")]
+        [SerializeField] private float timeLimitSeconds = 420f;
+        [SerializeField] private float playerSpeedMultiplier = 1.35f;
+        [SerializeField] private int bonusHealth = 50;
+        [SerializeField] private string mapId = "Catacombs";
+        [SerializeField] private string exitDoorId = "CatacombsEscapeDoor";
 
-        public void CompleteObjective() => completedObjectives = Mathf.Clamp(completedObjectives + 1, 0, objectivesRequired);
+        private float remainingTime;
+        private bool escapeDoorFound;
+        private bool escaped;
+        private bool failed;
 
-        public bool TickExtraction(float deltaTime, bool playersInsideZone)
+        public float RemainingTime => Mathf.Max(0f, remainingTime);
+        public float TimeProgress => timeLimitSeconds <= 0f ? 0f : RemainingTime / timeLimitSeconds;
+        public float PlayerSpeedMultiplier => playerSpeedMultiplier;
+        public int BonusHealth => bonusHealth;
+        public string MapId => mapId;
+        public string ExitDoorId => exitDoorId;
+        public bool EscapeDoorFound => escapeDoorFound;
+        public bool Escaped => escaped;
+        public bool Failed => failed;
+
+        public override void OnModeStarted()
         {
-            if (!CanExtract || !playersInsideZone)
-            {
-                extractionTimer = 0f;
-                return false;
-            }
+            remainingTime = Mathf.Max(1f, timeLimitSeconds);
+            escapeDoorFound = false;
+            escaped = false;
+            failed = false;
+            Debug.Log($"Extraction started on {mapId}: find {exitDoorId} before the timer expires.");
+        }
 
-            extractionTimer += Mathf.Max(0f, deltaTime);
-            return extractionTimer >= extractionHoldSeconds;
+        public override void OnModeEnded() { }
+
+        private void Update()
+        {
+            if (escaped || failed) return;
+            remainingTime -= Time.deltaTime;
+            if (remainingTime <= 0f)
+            {
+                remainingTime = 0f;
+                failed = true;
+                Debug.Log("Extraction failed: the Catacombs timer expired.");
+            }
+        }
+
+        public void SetEscapeDoorFound()
+        {
+            if (!failed && !escaped)
+                escapeDoorFound = true;
+        }
+
+        public void TryEscape(bool playerInsideDoorZone)
+        {
+            if (failed || !escapeDoorFound || !playerInsideDoorZone) return;
+            escaped = true;
+            Debug.Log("Extraction successful: players escaped the Catacombs.");
         }
     }
 
@@ -81,9 +118,9 @@ namespace KaijuGame.Modes
     {
         public override GameModeId Id => GameModeId.NullBoss;
         [SerializeField] private Transform boss;
-        [SerializeField] private float normalBossSpeed = 9f;
-        [SerializeField] private float boostedBossSpeed = 15f;
-        [SerializeField] private float playerSpeedMultiplier = 1.5f;
+        [SerializeField] private float normalBossSpeed = 11f;
+        [SerializeField] private float boostedBossSpeed = 20f;
+        [SerializeField] private float playerSpeedMultiplier = 1.6f;
         [SerializeField] private float encounterDuration = 180f;
         [SerializeField] private AnimationCurve speedCurve;
 
@@ -98,7 +135,7 @@ namespace KaijuGame.Modes
         {
             elapsed = 0f;
             encounterActive = true;
-            Debug.Log("NULL encounter started: players receive a temporary speed boost.");
+            Debug.Log("NULL encounter started: players receive a major speed boost while NULL hunts them.");
         }
 
         public override void OnModeEnded() => encounterActive = false;

@@ -76,7 +76,6 @@ namespace KaijuGame.Networking
         public void OnJoinRoomFailed(short returnCode, string message) => Debug.LogWarning($"Join room failed: {returnCode} {message}");
         public void OnJoinRandomFailed(short returnCode, string message) => Debug.LogWarning($"Quick join failed: {returnCode} {message}");
         public void OnLeftRoom() { }
-        public void OnFriendListUpdate(List<FriendInfo> friendList) { }
 #endif
     }
 }

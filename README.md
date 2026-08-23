@@ -23,19 +23,22 @@ Extraction takes place in the Catacombs. Players receive a health and speed boos
 ## NULL boss
 The NULL-style boss fight uses the supplied monster player/boss model. Players receive a major temporary speed boost while the boss is significantly faster, turning the encounter into a chaotic chase with room for future meta/glitch mechanics, reality shifts, and scripted arena events.
 
+## VR player setup
+The project is being wired around the original **Another-Axiom GorillaLocomotion** `Player` implementation rather than a custom replacement. The upstream component uses a Rigidbody, head/body colliders, tracked left/right hand transforms, and configurable locomotion layers.
+
+Use `Kaiju Game/Install Gorilla Locomotion` in the Unity Editor to import the upstream MIT-licensed `.unitypackage`. After your rigged player model is imported/unpacked, select its root and run `Kaiju Game/Configure Selected Model As VR Player`. That creates the VR tracking targets, colliders, Rigidbody, and GorillaLocomotion bindings. The model archive currently stored in `Assets/destiny-chimps-player-model.zip` and the supplied monster rig archive are kept separate so the actual authored assets remain untouched.
+
 ## Tech
 - Unity 2022.3 LTS baseline
-- Photon networking (PUN 2 adapter included; networking code is isolated so the backend can be swapped later)
+- Photon networking (PUN 2 adapter included; networking code is isolated)
 - Modular game-mode architecture
-- Gorilla-style locomotion integration planned as the VR movement foundation
+- GorillaLocomotion VR movement integration
 
 ## Important
-The repository intentionally does **not** include copyrighted game assets or copied game code. The supplied Catacombs map, Cave map, and player/boss model can be integrated as project assets.
+The repository intentionally does **not** include copied third-party game code or copyrighted game assets. GorillaLocomotion is imported through its upstream MIT-licensed package, while the supplied map/model archives are project-owned inputs.
 
 ## Photon setup
 1. Create a Photon App ID for the Unity/PUN 2 application.
-2. Import Photon PUN 2 into the Unity project.
+2. Import/configure Photon PUN 2.
 3. Open `Assets/Resources/PhotonServerSettings.asset` after import and configure the App ID.
 4. Start from `MainMenu` and create/join a friend room.
-
-The starter networking layer is disabled automatically when Photon PUN 2 is not installed, so the project remains editable before the SDK is imported.

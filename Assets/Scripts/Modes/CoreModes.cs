@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 using KaijuGame.Core;
 
@@ -27,10 +26,7 @@ namespace KaijuGame.Modes
         public bool CanExtract => completedObjectives >= objectivesRequired;
         public float ExtractionProgress => extractionHoldSeconds <= 0f ? 1f : Mathf.Clamp01(extractionTimer / extractionHoldSeconds);
 
-        public void CompleteObjective()
-        {
-            completedObjectives = Mathf.Clamp(completedObjectives + 1, 0, objectivesRequired);
-        }
+        public void CompleteObjective() => completedObjectives = Mathf.Clamp(completedObjectives + 1, 0, objectivesRequired);
 
         public bool TickExtraction(float deltaTime, bool playersInsideZone)
         {
@@ -66,7 +62,7 @@ namespace KaijuGame.Modes
     public sealed class InfectionMode : GameMode
     {
         public override GameModeId Id => GameModeId.Infection;
-        public void Infect() { Debug.Log("Infection spread event queued."); }
+        public void Infect() => Debug.Log("Infection spread event queued.");
     }
 
     public sealed class TeamBattleMode : GameMode
@@ -89,13 +85,13 @@ namespace KaijuGame.Modes
         [SerializeField] private float boostedBossSpeed = 15f;
         [SerializeField] private float playerSpeedMultiplier = 1.5f;
         [SerializeField] private float encounterDuration = 180f;
-        [SerializeField] private AnimationCurve speedCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 1.35f);
+        [SerializeField] private AnimationCurve speedCurve;
 
         private float elapsed;
         private bool encounterActive;
 
         public float PlayerSpeedMultiplier => playerSpeedMultiplier;
-        public float BossSpeed => Mathf.Lerp(normalBossSpeed, boostedBossSpeed, speedCurve.Evaluate(Mathf.Clamp01(elapsed / encounterDuration)));
+        public float BossSpeed => Mathf.Lerp(normalBossSpeed, boostedBossSpeed, EvaluateSpeedCurve(Mathf.Clamp01(elapsed / encounterDuration)));
         public bool IsActive => encounterActive;
 
         public override void OnModeStarted()
@@ -105,32 +101,33 @@ namespace KaijuGame.Modes
             Debug.Log("NULL encounter started: players receive a temporary speed boost.");
         }
 
-        public override void OnModeEnded()
-        {
-            encounterActive = false;
-        }
+        public override void OnModeEnded() => encounterActive = false;
 
         private void Update()
         {
-            if (!encounterActive) return;
+            if (!encounterActive || boss == null) return;
             elapsed += Time.deltaTime;
 
-            if (boss != null)
-            {
-                var t = FindClosestPlayerPosition();
-                if (t.HasValue)
-                {
-                    var direction = (t.Value - boss.position);
-                    if (direction.sqrMagnitude > 0.1f)
-                        boss.position += direction.normalized * BossSpeed * Time.deltaTime;
-                }
-            }
+            var target = FindClosestPlayerPosition();
+            if (!target.HasValue) return;
+
+            var direction = target.Value - boss.position;
+            if (direction.sqrMagnitude > 0.1f)
+                boss.position += direction.normalized * BossSpeed * Time.deltaTime;
+        }
+
+        private float EvaluateSpeedCurve(float t)
+        {
+            return speedCurve == null || speedCurve.length == 0
+                ? Mathf.Lerp(1f, 1.35f, t)
+                : speedCurve.Evaluate(t);
         }
 
         private Vector3? FindClosestPlayerPosition()
         {
             var players = GameObject.FindGameObjectsWithTag("Player");
             if (players.Length == 0) return null;
+            if (boss == null) return players[0].transform.position;
 
             Vector3 closest = players[0].transform.position;
             var best = (closest - boss.position).sqrMagnitude;

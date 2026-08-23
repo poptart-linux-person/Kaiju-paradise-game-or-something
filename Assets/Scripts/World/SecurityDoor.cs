@@ -11,6 +11,7 @@ namespace KaijuGame.World
         [SerializeField] private float breakImpactSpeed = 7f;
         [SerializeField] private float openTorque = 90f;
         [SerializeField] private bool canJumpThrough = true;
+        [SerializeField] private bool autoOpenWithKeycard = true;
 
         private Rigidbody body;
         private bool opened;
@@ -56,6 +57,17 @@ namespace KaijuGame.World
         private void OnCollisionEnter(Collision collision)
         {
             if (broken || opened) return;
+
+            if (autoOpenWithKeycard)
+            {
+                var inventory = collision.collider.GetComponentInParent<KeycardInventory>();
+                if (inventory != null && inventory.Has(requiredCard))
+                {
+                    Open();
+                    return;
+                }
+            }
+
             if (collision.relativeVelocity.magnitude >= breakImpactSpeed && collision.impulse.magnitude >= breakForce)
             {
                 if (canJumpThrough && collision.collider.GetComponentInParent<Rigidbody>() != null)

@@ -41,7 +41,11 @@ namespace KaijuGame.Items
             }
 
             if (nearest == null) return false;
-            nearest.GetComponent<PhotonPhysicalItem>()?.RequestOwnership();
+
+            var networkItem = nearest.GetComponent<PhotonPhysicalItem>();
+            if (networkItem != null && !networkItem.EnsureOwnershipForGrab())
+                return false;
+
             heldItem = nearest;
             heldItem.Grab(transform, body);
             return true;

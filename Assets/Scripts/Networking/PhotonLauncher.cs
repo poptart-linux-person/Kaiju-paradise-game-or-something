@@ -14,12 +14,14 @@ namespace KaijuGame.Networking
     {
         [SerializeField] private string gameVersion = "0.1.0";
         [SerializeField] private byte maxPlayersPerRoom = 8;
+        private const string PhotonAppId = "60b42ebb-61ca-4f64-8b63-a1b266167508";
 
         private void Start()
         {
 #if PHOTON_UNITY_NETWORKING
             PhotonNetwork.GameVersion = gameVersion;
             PhotonNetwork.AutomaticallySyncScene = true;
+            PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime = PhotonAppId;
             PhotonNetwork.ConnectUsingSettings();
 #else
             Debug.Log("Photon PUN 2 is not installed yet. Import PUN 2, then enable PHOTON_UNITY_NETWORKING in your scripting define symbols.");
@@ -39,7 +41,9 @@ namespace KaijuGame.Networking
         public void JoinRoom(string roomCode)
         {
 #if PHOTON_UNITY_NETWORKING
-            PhotonNetwork.JoinRoom(roomCode.Trim().ToUpperInvariant());
+            roomCode = roomCode?.Trim().ToUpperInvariant();
+            if (string.IsNullOrEmpty(roomCode)) return;
+            PhotonNetwork.JoinRoom(roomCode);
 #else
             Debug.LogWarning($"JoinRoom requested: {roomCode}. Photon is not installed.");
 #endif

@@ -39,5 +39,8 @@ namespace KaijuGame.Networking
             }
         }
     }
+#else
+    // Placeholder component so the prototype scene can be created before PUN 2 is imported.
+    public sealed class PhotonPlayer : MonoBehaviour { }
 #endif
 }

@@ -1,6 +1,6 @@
 using System;
-using System.Reflection;
 using UnityEngine;
+using System.Reflection;
 
 namespace KaijuGame.Player
 {
@@ -26,6 +26,7 @@ namespace KaijuGame.Player
         {
             ResolveReferences();
             ApplyGorillaReferences();
+            EnsurePhotonRigSync();
         }
 
         private void ResolveReferences()
@@ -65,6 +66,14 @@ namespace KaijuGame.Player
             SetField("rightHandFollower", rightHandTarget);
             SetField("leftHandTransform", leftHandTarget);
             SetField("rightHandTransform", rightHandTarget);
+        }
+
+        private void EnsurePhotonRigSync()
+        {
+            var sync = GetComponent<KaijuGame.Networking.PhotonVRRigSync>();
+            if (sync == null)
+                sync = gameObject.AddComponent<KaijuGame.Networking.PhotonVRRigSync>();
+            sync.SetTargets(headTarget, leftHandTarget, rightHandTarget);
         }
 
         private void SetField(string fieldName, object value)

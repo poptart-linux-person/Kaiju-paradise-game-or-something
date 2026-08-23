@@ -20,21 +20,19 @@ namespace KaijuGame.Modes
         public override GameModeId Id => GameModeId.Extraction;
 
         [Header("Catacombs Escape")]
-        [SerializeField] private float timeLimitSeconds = 420f;
         [SerializeField] private float playerSpeedMultiplier = 1.35f;
         [SerializeField] private int bonusHealth = 50;
+        [SerializeField] private float hunterSpeed = 11f;
         [SerializeField] private string mapId = "Catacombs";
         [SerializeField] private string exitDoorId = "CatacombsEscapeDoor";
 
-        private float remainingTime;
         private bool escapeDoorFound;
         private bool escaped;
         private bool failed;
 
-        public float RemainingTime => Mathf.Max(0f, remainingTime);
-        public float TimeProgress => timeLimitSeconds <= 0f ? 0f : RemainingTime / timeLimitSeconds;
         public float PlayerSpeedMultiplier => playerSpeedMultiplier;
         public int BonusHealth => bonusHealth;
+        public float HunterSpeed => hunterSpeed;
         public string MapId => mapId;
         public string ExitDoorId => exitDoorId;
         public bool EscapeDoorFound => escapeDoorFound;
@@ -43,26 +41,13 @@ namespace KaijuGame.Modes
 
         public override void OnModeStarted()
         {
-            remainingTime = Mathf.Max(1f, timeLimitSeconds);
             escapeDoorFound = false;
             escaped = false;
             failed = false;
-            Debug.Log($"Extraction started on {mapId}: find {exitDoorId} before the timer expires.");
+            Debug.Log($"Extraction started on {mapId}: find {exitDoorId} while fast hunter AI pursues the players. No time limit.");
         }
 
         public override void OnModeEnded() { }
-
-        private void Update()
-        {
-            if (escaped || failed) return;
-            remainingTime -= Time.deltaTime;
-            if (remainingTime <= 0f)
-            {
-                remainingTime = 0f;
-                failed = true;
-                Debug.Log("Extraction failed: the Catacombs timer expired.");
-            }
-        }
 
         public void SetEscapeDoorFound()
         {
@@ -75,6 +60,13 @@ namespace KaijuGame.Modes
             if (failed || !escapeDoorFound || !playerInsideDoorZone) return;
             escaped = true;
             Debug.Log("Extraction successful: players escaped the Catacombs.");
+        }
+
+        public void FailExtraction()
+        {
+            if (escaped) return;
+            failed = true;
+            Debug.Log("Extraction failed: the squad was overwhelmed.");
         }
     }
 

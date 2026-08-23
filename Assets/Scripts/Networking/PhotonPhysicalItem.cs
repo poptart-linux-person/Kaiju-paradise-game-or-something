@@ -37,11 +37,14 @@ namespace KaijuGame.Networking
             }
         }
 
-        public void RequestOwnership()
+        public bool EnsureOwnershipForGrab()
         {
-            if (!photonView.IsMine)
-                photonView.RequestOwnership();
+            if (photonView.IsMine) return true;
+            photonView.RequestOwnership();
+            return false;
         }
+
+        public void RequestOwnership() => photonView.RequestOwnership();
 
         public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
         {
@@ -64,6 +67,7 @@ namespace KaijuGame.Networking
 #else
     public sealed class PhotonPhysicalItem : MonoBehaviour
     {
+        public bool EnsureOwnershipForGrab() => true;
         public void RequestOwnership() { }
     }
 #endif

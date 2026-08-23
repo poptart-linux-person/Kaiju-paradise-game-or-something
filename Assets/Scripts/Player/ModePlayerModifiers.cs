@@ -36,6 +36,12 @@ namespace KaijuGame.Player
             Apply(mode);
         }
 
+        private void OnDestroy()
+        {
+            vitals?.ClearTemporaryMaxHealthBonus(false);
+            RestoreGorilla();
+        }
+
         private void ResolveGorilla()
         {
             var type = System.Type.GetType("GorillaLocomotion.Player, Assembly-CSharp");
@@ -53,8 +59,10 @@ namespace KaijuGame.Player
         private void Apply(GameModeId mode)
         {
             RestoreGorilla();
-            if (vitals != null && mode == GameModeId.Extraction)
-                vitals.SetTemporaryMaxHealthBonus(extractionHealthBonus, true);
+            vitals?.ClearTemporaryMaxHealthBonus(false);
+
+            if (mode == GameModeId.Extraction)
+                vitals?.SetTemporaryMaxHealthBonus(extractionHealthBonus, true);
 
             var multiplier = mode == GameModeId.Extraction ? extractionSpeedMultiplier
                 : mode == GameModeId.NullBoss ? nullSpeedMultiplier

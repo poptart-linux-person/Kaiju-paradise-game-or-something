@@ -16,15 +16,15 @@ namespace KaijuGame.Audio
 
         private Transform[] threats;
 
-        public void ConfigureLayers(AudioSource ambient, AudioSource chase, AudioSource danger, AudioSource panic)
+        public void ConfigureLayers(AudioSource ambient, AudioSource chase, AudioSource danger, AudioSource panic, Transform listener)
         {
             ambientLayer = ambient;
             chaseLayer = chase;
             dangerLayer = danger;
             panicLayer = panic;
+            listenerTarget = listener;
         }
 
-        public void SetListenerTarget(Transform target) => listenerTarget = target;
         public void SetThreats(Transform[] activeThreats) => threats = activeThreats;
 
         private void Update()

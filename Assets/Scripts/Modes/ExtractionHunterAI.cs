@@ -15,10 +15,13 @@ namespace KaijuGame.Modes
         [SerializeField] private float damage = 20f;
         [SerializeField] private float attackCooldown = 0.8f;
         [SerializeField] private float stopDistance = 1.2f;
+        [SerializeField] private float targetScanInterval = 0.1f;
 
         private float currentSpeed;
         private float attackTimer;
+        private float targetScanTimer;
         private Transform target;
+        private Transform[] players = System.Array.Empty<Transform>();
         private NavMeshAgent agent;
         private VoiceHearingAI hearing;
 
@@ -38,14 +41,24 @@ namespace KaijuGame.Modes
         private void Update()
         {
             attackTimer -= Time.deltaTime;
-            target = hearing != null && hearing.HeardTarget != null
-                ? hearing.HeardTarget
-                : FindClosestPlayer();
+            targetScanTimer -= Time.deltaTime;
+            if (targetScanTimer <= 0f)
+            {
+                targetScanTimer = Mathf.Max(0.02f, targetScanInterval);
+                target = hearing != null && hearing.HeardTarget != null
+                    ? hearing.HeardTarget
+                    : FindClosestPlayer();
+            }
+
             if (target == null) return;
 
             var offset = target.position - transform.position;
             var distance = offset.magnitude;
-            if (distance > chaseRange) return;
+            if (distance > chaseRange)
+            {
+                if (agent != null && agent.isOnNavMesh) agent.ResetPath();
+                return;
+            }
 
             if (agent != null && agent.isOnNavMesh)
             {
@@ -67,11 +80,12 @@ namespace KaijuGame.Modes
 
         private Transform FindClosestPlayer()
         {
-            var players = GameObject.FindGameObjectsWithTag("Player");
-            Transform closest = null;
+            var objects = GameObject.FindGameObjectsWithTag("Player");
             var best = chaseRange * chaseRange;
-            foreach (var player in players)
+            Transform closest = null;
+            foreach (var player in objects)
             {
+                if (player == null || !player.activeInHierarchy) continue;
                 var distance = (player.transform.position - transform.position).sqrMagnitude;
                 if (distance < best)
                 {
@@ -79,6 +93,7 @@ namespace KaijuGame.Modes
                     closest = player.transform;
                 }
             }
+            players = objects.Length > 0 ? System.Array.ConvertAll(objects, x => x != null ? x.transform : null) : System.Array.Empty<Transform>();
             return closest;
         }
     }

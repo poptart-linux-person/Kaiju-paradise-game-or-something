@@ -12,11 +12,13 @@ namespace KaijuGame.Audio
         [SerializeField] private AudioClip danger;
         [SerializeField] private AudioClip panic;
         [SerializeField] private ChaseAudioDirector director;
+        [SerializeField] private float threatRefreshInterval = 0.25f;
 
         private AudioSource ambientSource;
         private AudioSource chaseSource;
         private AudioSource dangerSource;
         private AudioSource panicSource;
+        private float threatTimer;
 
         private void Awake()
         {
@@ -28,12 +30,13 @@ namespace KaijuGame.Audio
 
         private void Update()
         {
+            threatTimer -= Time.deltaTime;
+            if (threatTimer > 0f) return;
+            threatTimer = Mathf.Max(0.05f, threatRefreshInterval);
             BindThreats();
-            if (director != null)
-            {
-                var player = FindLocalPlayer();
-                if (player != null) director.SetListenerTarget(player);
-            }
+
+            var player = FindLocalPlayer();
+            if (player != null) director.SetListenerTarget(player);
         }
 
         private void ConfigureSources()

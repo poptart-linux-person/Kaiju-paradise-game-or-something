@@ -7,13 +7,24 @@ namespace KaijuGame.Audio
         [SerializeField] private AudioSource ambientLayer;
         [SerializeField] private AudioSource chaseLayer;
         [SerializeField] private AudioSource dangerLayer;
+        [SerializeField] private AudioSource panicLayer;
         [SerializeField] private Transform listenerTarget;
         [SerializeField] private float chaseDistance = 35f;
         [SerializeField] private float dangerDistance = 10f;
+        [SerializeField] private float panicDistance = 4f;
         [SerializeField] private float fadeSpeed = 4f;
 
         private Transform[] threats;
 
+        public void ConfigureLayers(AudioSource ambient, AudioSource chase, AudioSource danger, AudioSource panic)
+        {
+            ambientLayer = ambient;
+            chaseLayer = chase;
+            dangerLayer = danger;
+            panicLayer = panic;
+        }
+
+        public void SetListenerTarget(Transform target) => listenerTarget = target;
         public void SetThreats(Transform[] activeThreats) => threats = activeThreats;
 
         private void Update()
@@ -22,10 +33,12 @@ namespace KaijuGame.Audio
             var nearest = FindNearestThreatDistance();
             var chase01 = nearest <= chaseDistance ? 1f - Mathf.InverseLerp(0f, chaseDistance, nearest) : 0f;
             var danger01 = nearest <= dangerDistance ? 1f - Mathf.InverseLerp(0f, dangerDistance, nearest) : 0f;
+            var panic01 = nearest <= panicDistance ? 1f - Mathf.InverseLerp(0f, panicDistance, nearest) : 0f;
 
             Fade(ambientLayer, 1f - chase01 * 0.35f);
             Fade(chaseLayer, chase01);
             Fade(dangerLayer, danger01);
+            Fade(panicLayer, panic01);
         }
 
         private float FindNearestThreatDistance()

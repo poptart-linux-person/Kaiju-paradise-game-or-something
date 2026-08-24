@@ -1,5 +1,4 @@
 using UnityEngine;
-using System;
 using System.Linq;
 using KaijuGame.Modes;
 
@@ -12,9 +11,8 @@ namespace KaijuGame.Audio
         [SerializeField] private AudioClip chase;
         [SerializeField] private AudioClip danger;
         [SerializeField] private AudioClip panic;
-        [SerializeField] private string generatedFolder = "Assets/Audio/ProceduralChase";
+        [SerializeField] private ChaseAudioDirector director;
 
-        private ChaseAudioDirector director;
         private AudioSource ambientSource;
         private AudioSource chaseSource;
         private AudioSource dangerSource;
@@ -22,41 +20,40 @@ namespace KaijuGame.Audio
 
         private void Awake()
         {
-            director = GetComponent<ChaseAudioDirector>() ?? gameObject.AddComponent<ChaseAudioDirector>();
-            ResolveGeneratedClips();
+            director = director != null ? director : GetComponent<ChaseAudioDirector>();
+            if (director == null) director = gameObject.AddComponent<ChaseAudioDirector>();
             ConfigureSources();
             BindThreats();
         }
 
-        private void Update() => BindThreats();
-
-        private void ResolveGeneratedClips()
+        private void Update()
         {
-#if UNITY_EDITOR
-            if (ambient == null) ambient = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{generatedFolder}/Chase_Ambient.wav");
-            if (chase == null) chase = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{generatedFolder}/Chase_Pulse.wav");
-            if (danger == null) danger = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{generatedFolder}/Chase_Percussion.wav");
-            if (panic == null) panic = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>($"{generatedFolder}/Chase_Panic.wav");
-#endif
+            BindThreats();
+            if (director != null)
+            {
+                var player = FindLocalPlayer();
+                if (player != null) director.SetListenerTarget(player);
+            }
         }
 
         private void ConfigureSources()
         {
-            ambientSource = CreateSource("Ambient", ambient, true);
-            chaseSource = CreateSource("Chase", chase, true);
-            dangerSource = CreateSource("Danger", danger, true);
-            panicSource = CreateSource("Panic", panic, true);
-            SetDirectorFields();
+            ambientSource = CreateSource("Ambient", ambient);
+            chaseSource = CreateSource("Chase", chase);
+            dangerSource = CreateSource("Danger", danger);
+            panicSource = CreateSource("Panic", panic);
+            director.ConfigureLayers(ambientSource, chaseSource, dangerSource, panicSource);
         }
 
-        private AudioSource CreateSource(string name, AudioClip clip, bool loop)
+        private AudioSource CreateSource(string name, AudioClip clip)
         {
             var child = transform.Find(name);
             var go = child != null ? child.gameObject : new GameObject(name);
             if (child == null) go.transform.SetParent(transform, false);
+
             var source = go.GetComponent<AudioSource>() ?? go.AddComponent<AudioSource>();
             source.playOnAwake = false;
-            source.loop = loop;
+            source.loop = true;
             source.spatialBlend = 0f;
             source.clip = clip;
             source.volume = 0f;
@@ -64,20 +61,10 @@ namespace KaijuGame.Audio
             return source;
         }
 
-        private void SetDirectorFields()
-        {
-            var so = new UnityEditor.SerializedObject(director);
-            so.FindProperty("ambientLayer").objectReferenceValue = ambientSource;
-            so.FindProperty("chaseLayer").objectReferenceValue = chaseSource;
-            so.FindProperty("dangerLayer").objectReferenceValue = dangerSource;
-            so.FindProperty("listenerTarget").objectReferenceValue = FindLocalPlayer();
-            so.ApplyModifiedPropertiesWithoutUndo();
-        }
-
         private void BindThreats()
         {
             var threats = FindObjectsOfType<ExtractionHunterAI>(true).Select(x => x.transform).ToArray();
-            director.SetThreats(threats);
+            director?.SetThreats(threats);
         }
 
         private Transform FindLocalPlayer()

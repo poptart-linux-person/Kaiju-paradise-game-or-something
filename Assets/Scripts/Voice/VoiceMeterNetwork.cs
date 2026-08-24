@@ -1,6 +1,5 @@
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.UI;
 
 #if PHOTON_UNITY_NETWORKING
 using Photon.Pun;
@@ -19,13 +18,16 @@ namespace KaijuGame.Voice
         [SerializeField] private float smoothing = 14f;
         [SerializeField] private float maxVisibleDistance = 30f;
         [SerializeField] private bool showMeter = true;
+        [SerializeField] private float meterWidth = 0.55f;
+        [SerializeField] private float meterHeight = 0.045f;
 
         private Component recorder;
         private PropertyInfo levelMeterProperty;
         private PropertyInfo peakProperty;
         private float targetLevel;
         private float smoothedLevel;
-        private Slider slider;
+        private Transform meterRoot;
+        private Transform fill;
         private Camera mainCamera;
 
         public float VoiceLevel => smoothedLevel;
@@ -43,13 +45,8 @@ namespace KaijuGame.Voice
         {
             if (mainCamera == null) mainCamera = Camera.main;
             if (IsLocal()) targetLevel = ReadRecorderLevel();
-
             smoothedLevel = Mathf.MoveTowards(smoothedLevel, targetLevel, smoothing * Time.deltaTime);
-            if (slider != null)
-            {
-                slider.value = smoothedLevel;
-                slider.gameObject.SetActive(mainCamera != null && Vector3.Distance(mainCamera.transform.position, headAnchor.position) <= maxVisibleDistance);
-            }
+            UpdateMeter();
         }
 
         private bool IsLocal()
@@ -63,9 +60,8 @@ namespace KaijuGame.Voice
 
         private void ResolveRecorder()
         {
-            var recorderType = System.Type.GetType("Photon.Voice.Unity.Recorder, PhotonVoice");
-            if (recorderType == null)
-                recorderType = System.Type.GetType("Photon.Voice.Unity.Recorder, PhotonVoiceLibs");
+            var recorderType = System.Type.GetType("Photon.Voice.Unity.Recorder, PhotonVoice")
+                ?? System.Type.GetType("Photon.Voice.Unity.Recorder, PhotonVoiceLibs");
             if (recorderType == null) return;
 
             foreach (var component in GetComponentsInChildren<Component>(true))
@@ -88,43 +84,44 @@ namespace KaijuGame.Voice
             if (recorder == null || levelMeterProperty == null || peakProperty == null) return 0f;
             var meter = levelMeterProperty.GetValue(recorder);
             if (meter == null) return 0f;
-            var peak = (float)peakProperty.GetValue(meter);
-            return Mathf.Clamp01(peak * sensitivity);
+            var peak = peakProperty.GetValue(meter);
+            if (peak == null) return 0f;
+            return Mathf.Clamp01((float)peak * sensitivity);
         }
 
         private void CreateMeter()
         {
-            var root = new GameObject("VoiceMeter", typeof(Canvas));
-            root.transform.SetParent(headAnchor, false);
-            root.transform.localPosition = Vector3.up * 0.3f;
-            var canvas = root.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.WorldSpace;
-            canvas.sortingOrder = 100;
-            var scaler = root.AddComponent<CanvasScaler>();
-            scaler.dynamicPixelsPerUnit = 10f;
+            meterRoot = new GameObject("VoiceMeter").transform;
+            meterRoot.SetParent(headAnchor, false);
+            meterRoot.localPosition = Vector3.up * 0.3f;
+            meterRoot.localScale = Vector3.one * 0.35f;
 
-            var back = CreateImage(root.transform, "Background");
-            back.rectTransform.sizeDelta = new Vector2(0.5f, 0.06f);
-            var fill = CreateImage(back.transform, "Fill");
-            fill.rectTransform.anchorMin = Vector2.zero;
-            fill.rectTransform.anchorMax = Vector2.one;
-            fill.rectTransform.offsetMin = Vector2.zero;
-            fill.rectTransform.offsetMax = Vector2.zero;
-
-            slider = back.gameObject.AddComponent<Slider>();
-            slider.fillRect = fill.rectTransform;
-            slider.interactable = false;
-            slider.minValue = 0f;
-            slider.maxValue = 1f;
-            slider.value = 0f;
-            root.transform.localScale = Vector3.one * 0.35f;
+            CreateQuad(meterRoot, "Background", new Vector3(meterWidth, meterHeight, 1f));
+            fill = CreateQuad(meterRoot, "Fill", new Vector3(meterWidth, meterHeight, 0.02f));
         }
 
-        private static Image CreateImage(Transform parent, string name)
+        private void UpdateMeter()
         {
-            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(parent, false);
-            return go.GetComponent<Image>();
+            if (meterRoot == null || fill == null || mainCamera == null) return;
+            var distance = Vector3.Distance(mainCamera.transform.position, headAnchor.position);
+            meterRoot.gameObject.SetActive(distance <= maxVisibleDistance);
+            if (!meterRoot.gameObject.activeSelf) return;
+
+            meterRoot.forward = mainCamera.transform.position - meterRoot.position;
+            var level = Mathf.Clamp01(smoothedLevel);
+            fill.localScale = new Vector3(meterWidth * level, meterHeight, 0.02f);
+            fill.localPosition = new Vector3((level - 1f) * meterWidth * 0.5f, 0f, -0.02f);
+        }
+
+        private static Transform CreateQuad(Transform parent, string name, Vector3 scale)
+        {
+            var primitive = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            primitive.name = name;
+            primitive.transform.SetParent(parent, false);
+            primitive.transform.localScale = scale;
+            var collider = primitive.GetComponent<Collider>();
+            if (collider != null) Destroy(collider);
+            return primitive.transform;
         }
 
 #if PHOTON_UNITY_NETWORKING

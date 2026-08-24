@@ -7,18 +7,35 @@ namespace KaijuGame.Voice
         [SerializeField] private float hearingRange = 30f;
         [SerializeField] private float minimumVoiceLevel = 0.08f;
         [SerializeField] private float memorySeconds = 2.5f;
+        [SerializeField] private float scanInterval = 0.1f;
         [SerializeField] private bool requireLineOfSight = false;
         [SerializeField] private LayerMask sightMask = ~0;
 
         private Transform heardTarget;
+        private VoiceMeterNetwork[] meters = System.Array.Empty<VoiceMeterNetwork>();
         private float memoryTimer;
+        private float scanTimer;
 
         public Transform HeardTarget => memoryTimer > 0f ? heardTarget : null;
         public bool HeardSomething => HeardTarget != null;
 
         private void Update()
         {
-            var meters = FindObjectsOfType<VoiceMeterNetwork>();
+            memoryTimer -= Time.deltaTime;
+            scanTimer -= Time.deltaTime;
+            if (scanTimer <= 0f)
+            {
+                scanTimer = Mathf.Max(0.02f, scanInterval);
+                ScanForVoice();
+            }
+
+            if (memoryTimer <= 0f)
+                heardTarget = null;
+        }
+
+        private void ScanForVoice()
+        {
+            meters = FindObjectsOfType<VoiceMeterNetwork>();
             var bestScore = 0f;
             Transform bestTarget = null;
 
@@ -48,11 +65,6 @@ namespace KaijuGame.Voice
             {
                 heardTarget = bestTarget;
                 memoryTimer = memorySeconds;
-            }
-            else
-            {
-                memoryTimer -= Time.deltaTime;
-                if (memoryTimer <= 0f) heardTarget = null;
             }
         }
     }

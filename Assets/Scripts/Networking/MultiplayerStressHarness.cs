@@ -4,7 +4,7 @@ using UnityEngine;
 namespace KaijuGame.Networking
 {
     /// <summary>
-    /// Local pre-Photon stress harness. It approximates an 8-player session by
+    /// Local pre-Photon stress harness. Approximates an 8-player session by
     /// simulating peer bodies and high-volume physics objects. It is intentionally
     /// separate from Photon so it can run before an App ID is configured.
     /// </summary>
@@ -89,11 +89,20 @@ namespace KaijuGame.Networking
         public void Clear()
         {
             foreach (var peer in spawnedPeers)
-                if (peer != null) DestroyImmediate(peer);
+                SafeDestroy(peer);
             foreach (var item in spawnedItems)
-                if (item != null) DestroyImmediate(item);
+                SafeDestroy(item);
             spawnedPeers.Clear();
             spawnedItems.Clear();
+        }
+
+        private static void SafeDestroy(GameObject target)
+        {
+            if (target == null) return;
+            if (Application.isPlaying)
+                Destroy(target);
+            else
+                DestroyImmediate(target);
         }
     }
 }

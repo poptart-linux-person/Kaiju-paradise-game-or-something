@@ -21,12 +21,11 @@ namespace KaijuGame.EditorTools
 
         private static bool ConfigurePun()
         {
-            var type = FindType("Photon.Pun.PhotonNetwork, Assembly-CSharp");
             var settingsType = FindType("Photon.Pun.PhotonServerSettings, Assembly-CSharp");
-            if (type == null || settingsType == null) return false;
+            if (settingsType == null) return false;
 
             var instanceProp = settingsType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
-            var settings = instanceProp?.GetValue(null);
+            var settings = instanceProp?.GetValue(null) as UnityEngine.Object;
             if (settings == null) return false;
 
             var appSettingsField = settingsType.GetField("AppSettings", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -34,10 +33,11 @@ namespace KaijuGame.EditorTools
             if (appSettings == null) return false;
 
             var appIdField = appSettings.GetType().GetField("AppIdRealtime", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            appIdField?.SetValue(appSettings, PunAppId);
+            if (appIdField == null) return false;
+            appIdField.SetValue(appSettings, PunAppId);
             EditorUtility.SetDirty(settings);
             AssetDatabase.SaveAssets();
-            return appIdField != null;
+            return true;
         }
 
         private static bool ConfigureVoice()
@@ -48,7 +48,7 @@ namespace KaijuGame.EditorTools
             if (settingsType == null) return false;
 
             var instanceProp = settingsType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static);
-            var settings = instanceProp?.GetValue(null);
+            var settings = instanceProp?.GetValue(null) as UnityEngine.Object;
             if (settings == null) return false;
 
             var appIdField = settingsType.GetField("AppIdVoice", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
